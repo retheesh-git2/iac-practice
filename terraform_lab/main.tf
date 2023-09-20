@@ -2,12 +2,12 @@
  
 resource "azurerm_resource_group" "rg" {
   location = "eastus"
-  name     = "rg_tflab"
+  name     = "rg_${var.app_name}"
 }
  
 # Create virtual network
 resource "azurerm_virtual_network" "my_terraform_network" {
-  name                = "vnet_tflab"
+  name                = "vnet_${var.app_name}"
   address_space       = ["10.1.0.0/16"]
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
@@ -15,7 +15,7 @@ resource "azurerm_virtual_network" "my_terraform_network" {
  
 # Create subnet
 resource "azurerm_subnet" "my_terraform_subnet" {
-  name                 = "subnet_tflab"
+  name                 = "subnet_${var.app_name}"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.my_terraform_network.name
   address_prefixes     = ["10.1.0.0/24"]
@@ -23,7 +23,7 @@ resource "azurerm_subnet" "my_terraform_subnet" {
 
 # Create virtual machine
 resource "azurerm_windows_virtual_machine" "windows_vm" {
-  name                = "winvm001"
+  name                = var.vm_name
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
   size                = "Standard_B1s"
@@ -48,7 +48,7 @@ resource "azurerm_windows_virtual_machine" "windows_vm" {
 
 # Create network interface
 resource "azurerm_network_interface" "vm_nic" {
-  name                = "winvm001-nic"
+  name                = "${var.vm_name}-nic"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
 
