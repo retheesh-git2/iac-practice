@@ -1,0 +1,101 @@
+---
+- name: Run Apache Example
+  hosts: all
+  become: true
+ 
+  vars:
+    app_user: "azureuser"
+    http_host: "lab_month2"
+ 
+  vars_files:
+    - vars/main.yml
+ 
+  tasks:
+    - name: Ensure Apache is installed
+      ansible.builtin.apt:
+        name: apache2
+        state: present
+        update_cache: true
+ 
+    - name: Ensure Apache is running
+      ansible.builtin.service:
+        name: apache2
+        state: started
+ 
+    - name: Create document root directory for webserver
+      ansible.builtin.file:
+        path: "/var/www/{{ http_host }}"
+        state: directory
+        owner: "{{ app_user }}"
+        mode: '0755'
+ 
+    - name: Copy index test page to document root directory
+      ansible.builtin.template:
+        src: "templates/index.html.j2"
+        dest: "/var/www/{{ http_host }}/index.html"
+        owner: root
+        group: root
+        mode: '0644'
+ 
+    - name: Empty the sites directory
+      ansible.builtin.file:
+        state: "{{ item }}"
+        path: "/etc/apache2/sites-enabled"
+        owner: root
+        group: root
+        mode: '0755'
+      with_items:
+        - absent
+        - directory
+ 
+    - name: Set up Apache virtuahHost
+      ansible.builtin.template:
+        src: "templates/apache.conf.j2"
+        dest: "/etc/apache2/sites-available/{{ http_host }}.conf"
+        owner: root
+        group: root
+        mode: '0644'
+ 
+    - name: Enable new site
+      ansible.builtin.command:
+        cmd: /usr/sbin/a2ensite {{ http_host }}
+        creates: /etc/apache2/sites-enabled/{{ http_host }}.conf
+      notify: Reload Apache
+ 
+    ####### Example tasks  ##########
+ 
+    - name: Display a variable with debug
+      ansible.builtin.debug:
+        msg: "The http_host variable is: {{ http_host }}"
+ 
+    - name: Capture the output of the whoami command in a register variable
+      ansible.builtin.command:
+        cmd: whoami
+      register: login
+ 
+    - name: Show the complete login register variable
+      ansible.builtin.debug:
+        msg: "{{ login }}"
+ 
+    - name: Show the just the standard output of the whoami command
+      ansible.builtin.debug:
+        msg: "The current user is: {{ login.stdout }}"
+ 
+    - name: Set 20% min and 80% max memory variables with set_fact
+      ansible.builtin.set_fact:
+        mem_min: "{{ (ansible_memtotal_mb * 0.2) |int |abs }}"
+        mem_max: "{{ (ansible_memtotal_mb * 0.8) |int |abs }}"
+ 
+    # example of using set_fact to shorten variable name
+    - name: Print min and max memory from get_facts
+      ansible.builtin.debug:
+        msg: >-
+           "min: {{ mem_min }}"
+           "max: {{ mem_max }}"
+ 
+  handlers:
+    # reload apache when one of its config files change
+    - name: Reload Apache
+      ansible.builtin.service:
+        name: apache2
+        state: reloaded

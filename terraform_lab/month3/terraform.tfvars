@@ -1,2 +1,2 @@
 app_name = "var_test"
-vm_name = "winvm01"
+vm_name = "winvim"

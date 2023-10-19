@@ -1,0 +1,5 @@
+---
+#http_host: "from_vars_file"
+http_conf: "{{ http_host}}.conf"
+http_port: "80"
+disable_default: true
